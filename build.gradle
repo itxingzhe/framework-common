@@ -1,0 +1,122 @@
+buildscript {
+    ext {
+        springBootVersion = "2.1.6.RELEASE"
+        springDataRedisVersion = "2.1.9.RELEASE"
+        integrationRedisVersion = "5.1.6.RELEASE"
+        jedisVersion = "2.9.3"
+        dubboSpringBootVersion = "2.7.3"
+        dubboVersion = "2.7.3"
+        nacosSpringBootVersion = "0.2.3"
+        registryNacosVersion = "2.7.3"
+        nacosClientVersion = "1.1.3"
+        guavaVersion = "28.1-jre"
+        cglibVersion = "3.2.12"
+        commonsLangVersion = "3.9"
+        commonsCodecVersion = "1.12"
+        commonsCollectionsVersion = "4.4"
+        lombokVersion = "1.18.8"
+        pageHelperVersion = "5.1.10"
+        fastjsonVersion = "1.2.61"
+        jacksonDatabindVersion = "2.9.10"
+        validationApiVersion = "2.0.1.Final"
+        javaxElVersion = "3.0.0"
+        javaEmojiVersion = "4.0.0"
+        jetCacheVersion = "2.6.0.M3"
+        sofaBootVersion = "3.2.0"
+        softTracerDubboVersion = "3.0.7"
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+group 'com.jiebai'
+
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+
+// java编译的时候缺省状态下会因为中文字符而失败
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier 'sources'
+}
+task javadocJar(type: Jar) {
+    from javadoc
+    classifier 'javadoc'
+}
+
+repositories {
+    mavenLocal() // 使用本地仓库
+    maven { url "http://maven.aliyun.com/nexus/content/repositories/central/" }
+    jcenter()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            version project.version
+            //若是war包，就写components.web,若是jar包，就写components.java
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+    repositories {
+        maven {
+            if (project.version.endsWith('-SNAPSHOT')) {
+                url = "http://nexus.51buyin.com/nexus/content/repositories/jiebai-snapshot/"
+            } else {
+                url = "http://nexus.51buyin.com/nexus/content/repositories/jiebai-release/"
+            }
+            credentials {
+                username project.nexus_username
+                password project.nexus_password
+            }
+        }
+    }
+}
+
+dependencies {
+    compile("org.apache.dubbo:dubbo-spring-boot-starter:${dubboSpringBootVersion}") {
+        exclude(module: 'log4j')
+        exclude(module: 'logback-classic')
+        exclude(module: 'slf4j-log4j12')
+    }
+    compile(
+            "org.springframework.boot:spring-boot-starter-aop:${springBootVersion}",
+            "org.springframework.data:spring-data-redis:${springDataRedisVersion}",
+            "org.springframework.integration:spring-integration-redis:${integrationRedisVersion}",
+            "redis.clients:jedis:${jedisVersion}",
+            "org.apache.dubbo:dubbo:${dubboVersion}",
+            "org.apache.dubbo:dubbo-registry-nacos:${registryNacosVersion}",
+            "com.alibaba.boot:nacos-config-spring-boot-starter:${nacosSpringBootVersion}",
+            "com.alibaba.nacos:nacos-client:${nacosClientVersion}",
+            "com.alibaba:fastjson:${fastjsonVersion}",
+            "com.alicp.jetcache:jetcache-starter-redis:${jetCacheVersion}",
+            "com.alicp.jetcache:jetcache-redis-springdata:${jetCacheVersion}",
+            "cglib:cglib:${cglibVersion}",
+            "com.google.guava:guava:${guavaVersion}",
+            "org.apache.commons:commons-lang3:${commonsLangVersion}",
+            "org.apache.commons:commons-collections4:${commonsCollectionsVersion}",
+            "commons-codec:commons-codec:${commonsCodecVersion}",
+            "org.projectlombok:lombok:${lombokVersion}",
+            "com.github.pagehelper:pagehelper:${pageHelperVersion}",
+            "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}",
+            "javax.validation:validation-api:${validationApiVersion}",
+            // hibernate-validation 依赖
+            "javax.el:javax.el-api:${javaxElVersion}",
+            "org.glassfish:javax.el:${javaxElVersion}",
+            "com.vdurmont:emoji-java:${javaEmojiVersion}",//emojo表情处理
+            "com.alipay.sofa:tracer-sofa-boot-starter:${sofaBootVersion}",
+            "com.alipay.sofa:sofa-tracer-dubbo-plugin:${softTracerDubboVersion}"
+    )
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
